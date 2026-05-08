@@ -1,0 +1,19 @@
+[project]
+name = "live-slides-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Prathamesh-Ghatole", email = "prathamesh.s.ghatole@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "speech-to-speech>=0.2.6",
+]
+
+[project.scripts]
+live-slides-agent = "live_slides_agent:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
