@@ -1,1 +1,1 @@
-System online. Detecting bio-signatures... You look like someone whose hardware is running at 110% capacity. Quick diagnostic — is your current home office actually recharging your nervous system, or is it just a high-speed lane to burnout?
+<emotion value="amused"/> Hey you. You look like someone whose hardware is running at 110% capacity. Quick question — is your current home office actually recharging your nervous system, or is it just a high-speed lane to burnout?

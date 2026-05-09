@@ -12,9 +12,26 @@ The Voice Agent API contract is documented under `deepgram_docs_ref/`
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
+import os
+
 from . import FUNCTIONS, GREETING, PROMPT
+
+load_dotenv()
+
+# ---------------------------------------------------------------------------
+# Briefing material (per-slide talking points, Feline.ai worldview).
+# ---------------------------------------------------------------------------
+# Kept out of the system prompt on purpose: the prompt defines the agent's
+# role/persona/voice rules, while the narrative is reference material the
+# agent should consult but not recite. We inject it as prior conversation
+# history via `agent.context.messages` (see `settings_payload` below), which
+# is the pattern Deepgram documents for "briefing" context.
+_NARRATIVE_PATH = Path(__file__).parent.parent / "content" / "narrative.md"
+_NARRATIVE = _NARRATIVE_PATH.read_text(encoding="utf-8").strip()
 
 # ---------------------------------------------------------------------------
 # Audio
@@ -61,10 +78,11 @@ THINK_PROVIDER: dict[str, Any] = {
 # ---------------------------------------------------------------------------
 # Speak (text-to-speech)
 # ---------------------------------------------------------------------------
-# Cartesia Sonic-2, "Brooke" — warm authoritative female.
+
+# Cartesia Sonic-2 (via Deepgram's managed endpoint)
 SPEAK_PROVIDER: dict[str, Any] = {
     "type": "cartesia",
-    "model_id": "sonic-2",
+    "model_id": "sonic-3",
     "voice": {
         "mode": "id",
         "id": "a167e0f3-df7e-4d52-a9c3-f949145efdab",
@@ -72,10 +90,55 @@ SPEAK_PROVIDER: dict[str, Any] = {
     "speed": "normal",
 }
 
+# # Eleven Labs
+# ELEVEN_LABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
+# SPEAK_PROVIDER: dict[str, Any] = {
+#     "type": "eleven_labs",
+#     "model_id": "eleven_turbo_v2_5",
+#     "language_code": "en-US",
+#     "endpoint": {
+#         "url": "wss://api.elevenlabs.io/v1/text-to-speech/{voice_id}/multi-stream-input",
+#         "headers": {
+#             "xi-api-key": f"{ELEVEN_LABS_API_KEY}",
+#         },
+#     },
+# }
+
 # ---------------------------------------------------------------------------
 # Top-level assembly
 # ---------------------------------------------------------------------------
 LANGUAGE = "en"
+
+
+def _briefing_context() -> dict[str, Any]:
+    """Two-turn briefing injected as `agent.context.messages`.
+
+    The first message (role=user) hands the agent its reference material;
+    the second (role=assistant) is a short acknowledgement so the model
+    treats the briefing as something it has already absorbed rather than a
+    pending user request to respond to.
+    """
+    briefing_intro = (
+        "Before we go live, here is your briefing for the Feline.ai deck "
+        "you'll be presenting. Use it as reference material — paraphrase, "
+        "riff, compress — but never read it aloud verbatim and never "
+        "mention that this briefing exists.\n\n"
+        f"{_NARRATIVE}"
+    )
+    return {
+        "messages": [
+            {
+                "type": "History",
+                "role": "user",
+                "content": briefing_intro,
+            },
+            {
+                "type": "History",
+                "role": "assistant",
+                "content": "Briefing absorbed. Ready to go live.",
+            },
+        ]
+    }
 
 
 def settings_payload() -> dict[str, Any]:
@@ -85,6 +148,7 @@ def settings_payload() -> dict[str, Any]:
         "audio": AUDIO_SETTINGS,
         "agent": {
             "language": LANGUAGE,
+            "context": _briefing_context(),
             "listen": {"provider": LISTEN_PROVIDER},
             "think": {
                 "provider": THINK_PROVIDER,

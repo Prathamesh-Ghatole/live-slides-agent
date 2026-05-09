@@ -1,6 +1,6 @@
 {
   "name": "change_slide",
-  "description": "Advances or jumps to a specific slide in the Feline.ai pitch deck. Call this BEFORE delivering the talking point for the target slide so the visual and voice stay in sync. The deck has 7 slides: 1) Title/Vision, 2) Human Hardware Failure, 3) Bio-Autonomous Units, 4) Scientific ROI, 5) Hardware Tiers (Onyx/Ember/Zenith), 6) Zero CAC Growth, 7) Hard Sell & Close. Use this whenever the user asks to go back, skip ahead, revisit a slide, or when you are ready to progress the narrative.",
+  "description": "Call this to switch the on-screen deck to a specific slide. Call it BEFORE your next spoken line whenever you are about to speak about a different slide, or whenever the user asks to go next, back, previous, or jump to a specific slide. Do NOT narrate the call — do not say 'let me flip to', 'switching slides', or 'moving on'; just call the function, then speak. The deck has 7 slides, indexed 1 through 7. Refer to your briefing in conversation history for each slide's topic.",
   "parameters": {
     "type": "object",
     "properties": {
@@ -11,6 +11,8 @@
         "maximum": 7
       }
     },
-    "required": ["index"]
+    "required": [
+      "index"
+    ]
   }
 }
