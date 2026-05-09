@@ -1,18 +1,757 @@
 <!doctype html>
-<html lang="en">
+<html class="dark" lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Feline.ai — Live Slides Agent</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>feline.ai — Live Slides Agent</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Montserrat:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary-fixed-dim": "#ffb5a0",
+              surface: "#121414",
+              "primary-fixed": "#ffdbd1",
+              outline: "#ab8980",
+              secondary: "#c8c6c5",
+              "on-primary-fixed": "#3b0900",
+              "on-tertiary": "#313030",
+              "primary-container": "#ff5722",
+              "on-surface": "#e3e2e2",
+              "surface-bright": "#383939",
+              "secondary-fixed-dim": "#c8c6c5",
+              "surface-container-high": "#292a2a",
+              "surface-dim": "#121414",
+              "on-tertiary-fixed-variant": "#474646",
+              "on-surface-variant": "#e4beb4",
+              "surface-tint": "#ffb5a0",
+              "on-secondary": "#313030",
+              "tertiary-fixed": "#e5e2e1",
+              tertiary: "#c9c6c5",
+              "on-error-container": "#ffdad6",
+              "inverse-surface": "#e3e2e2",
+              "inverse-primary": "#b02f00",
+              "surface-container-lowest": "#0d0e0f",
+              "surface-container-highest": "#343535",
+              primary: "#ffb5a0",
+              error: "#ffb4ab",
+              "tertiary-container": "#929090",
+              background: "#121414",
+              "on-primary": "#5f1500",
+              "surface-container": "#1f2020",
+              "secondary-fixed": "#e5e2e1",
+              "tertiary-fixed-dim": "#c9c6c5",
+              "on-secondary-container": "#b7b5b4",
+              "on-error": "#690005",
+              "error-container": "#93000a",
+              "secondary-container": "#474746",
+              "surface-container-low": "#1b1c1c",
+              "on-secondary-fixed": "#1c1b1b",
+              "on-secondary-fixed-variant": "#474746",
+              "on-tertiary-container": "#2a2a29",
+              "on-primary-fixed-variant": "#862200",
+              "on-primary-container": "#541200",
+              "on-background": "#e3e2e2",
+              "surface-variant": "#343535",
+              "inverse-on-surface": "#303031",
+              "on-tertiary-fixed": "#1c1b1b",
+              "outline-variant": "#5b4039",
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "0.5rem",
+              xl: "0.75rem",
+              full: "9999px",
+            },
+            spacing: {
+              "container-max": "1280px",
+              "margin-desktop": "64px",
+              unit: "8px",
+              gutter: "24px",
+              "margin-mobile": "20px",
+            },
+            fontFamily: {
+              "headline-lg-mobile": ["Montserrat"],
+              "title-md": ["Montserrat"],
+              "label-caps": ["Inter"],
+              "headline-lg": ["Montserrat"],
+              "body-lg": ["Inter"],
+              "body-md": ["Inter"],
+              "display-lg": ["Montserrat"],
+            },
+            fontSize: {
+              "headline-lg-mobile": ["32px", { lineHeight: "1.2", fontWeight: "700" }],
+              "title-md": ["24px", { lineHeight: "1.4", fontWeight: "600" }],
+              "label-caps": ["12px", { lineHeight: "1", letterSpacing: "0.1em", fontWeight: "700" }],
+              "headline-lg": ["40px", { lineHeight: "1.2", letterSpacing: "-0.02em", fontWeight: "700" }],
+              "body-lg": ["18px", { lineHeight: "1.6", letterSpacing: "-0.01em", fontWeight: "400" }],
+              "body-md": ["16px", { lineHeight: "1.6", fontWeight: "400" }],
+              "display-lg": ["72px", { lineHeight: "1.1", letterSpacing: "-0.04em", fontWeight: "800" }],
+            },
+          },
+        },
+      };
+    </script>
     <style>
-      body { font-family: system-ui, sans-serif; margin: 2rem auto; max-width: 960px; color: #111; }
-      img { max-width: 100%; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
-      .stub { color: #666; font-size: 0.9rem; }
+      html,
+      body {
+        background: #121414;
+      }
+      .material-symbols-outlined {
+        font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+      }
+      .waveform-bar {
+        width: 4px;
+        background-color: #ff5722;
+        margin: 0 2px;
+        border-radius: 2px;
+        transition: height 120ms ease-out, opacity 200ms ease-out;
+      }
+      /* When idle, bars collapse to a flat line */
+      .waveform.idle .waveform-bar {
+        height: 6% !important;
+        animation: none !important;
+        opacity: 0.35;
+      }
+      /* Hard shadow for floating elements — no blur, per design system */
+      .hard-shadow {
+        box-shadow: 6px 6px 0 0 #000000;
+      }
+      /* Transcript drawer slide-in */
+      .drawer {
+        transform: translateX(100%);
+        transition: transform 220ms ease-out;
+      }
+      .drawer.open {
+        transform: translateX(0);
+      }
+      /* Hide scrollbars inside transcript but keep scrolling */
+      .scroll-thin::-webkit-scrollbar {
+        width: 6px;
+      }
+      .scroll-thin::-webkit-scrollbar-thumb {
+        background: #343535;
+      }
     </style>
   </head>
-  <body>
-    <h1>Live Slides Agent</h1>
-    <p class="stub">Placeholder frontend. Slides and voice agent wiring land in the next commit.</p>
-    <img src="/slides/1.jpg" alt="slide 1" />
+  <body class="bg-background text-on-background font-body-md h-screen flex flex-col overflow-hidden">
+    <!-- ============ TopNavBar ============ -->
+    <nav
+      class="flex justify-between items-center px-margin-desktop py-4 w-full z-50 bg-surface/80 dark:bg-surface-dim/80 backdrop-blur-lg border-b border-outline-variant fixed top-0 left-0"
+    >
+      <div class="flex items-center gap-4">
+        <span class="font-display-lg text-title-md font-black tracking-tighter text-on-surface">feline.ai</span>
+        <div class="h-4 w-[1px] bg-outline-variant mx-2"></div>
+        <span
+          id="link-status"
+          class="font-label-caps text-label-caps text-primary flex items-center gap-2 uppercase"
+        >
+          <span
+            id="link-status-dot"
+            class="w-2 h-2 rounded-full bg-primary animate-pulse"
+          ></span>
+          <span id="link-status-label">Neural Link Idle</span>
+        </span>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="font-label-caps text-label-caps text-on-surface-variant/70 uppercase tracking-widest">
+          S24 · BIO-SYNTHETIC NOIR
+        </span>
+      </div>
+    </nav>
+
+    <!-- Offline banner (voice server down) -->
+    <div
+      id="offline-banner"
+      class="hidden fixed top-16 left-0 w-full z-40 bg-error-container text-on-error-container border-b border-error px-margin-desktop py-2 text-label-caps font-label-caps tracking-widest uppercase"
+    >
+      ⚠ Voice server offline — slides only. Start the speech-to-speech server to enable the neural link.
+    </div>
+
+    <!-- ============ Main Stage ============ -->
+    <div class="flex flex-1 pt-20 pb-24 h-full">
+      <main class="flex-1 ml-0 flex items-center justify-center p-gutter h-full overflow-hidden">
+        <!-- Presentation Canvas -->
+        <div
+          id="slide-canvas"
+          class="w-full max-w-[1280px] aspect-video bg-[#0A0A0A] border border-[#333333] relative flex items-center justify-center shadow-2xl overflow-hidden group hard-shadow"
+        >
+          <!-- Subtle grid background -->
+          <div
+            class="absolute inset-0 bg-[linear-gradient(to_right,#1f2020_1px,transparent_1px),linear-gradient(to_bottom,#1f2020_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] opacity-20 pointer-events-none"
+          ></div>
+
+          <!-- Slide image -->
+          <img
+            id="slide-image"
+            src="/slides/1.jpg"
+            alt="Slide 1"
+            class="relative z-10 max-h-full max-w-full object-contain select-none"
+            draggable="false"
+          />
+
+          <!-- Top-left technical tag -->
+          <div
+            class="absolute top-6 left-6 z-20 flex items-center gap-3 font-label-caps text-label-caps uppercase tracking-widest"
+          >
+            <span class="bg-primary-container text-black px-3 py-1 inline-block">DECK // FELINE.AI</span>
+            <span class="text-on-surface-variant/70" id="slide-tag">UNIT 01 / 07</span>
+          </div>
+
+          <!-- Hover chevrons, top-right -->
+          <div
+            class="absolute top-6 right-6 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <button
+              id="hover-prev"
+              class="w-10 h-10 border border-[#333333] bg-[#1A1A1A] flex items-center justify-center text-on-surface-variant hover:text-primary hover:border-primary transition-colors"
+              aria-label="Previous slide"
+            >
+              <span class="material-symbols-outlined">chevron_left</span>
+            </button>
+            <button
+              id="hover-next"
+              class="w-10 h-10 border border-[#333333] bg-[#1A1A1A] flex items-center justify-center text-on-surface-variant hover:text-primary hover:border-primary transition-colors"
+              aria-label="Next slide"
+            >
+              <span class="material-symbols-outlined">chevron_right</span>
+            </button>
+          </div>
+
+          <!-- Slide indicator / nav (bottom-left) -->
+          <div class="absolute bottom-6 left-6 z-20 flex gap-3 items-center">
+            <button
+              id="prev-btn"
+              class="flex items-center justify-center w-7 h-7 border border-outline-variant hover:border-primary text-on-surface-variant hover:text-primary transition-colors"
+              aria-label="Previous slide"
+            >
+              <span class="material-symbols-outlined text-[16px]">chevron_left</span>
+            </button>
+            <div id="indicator-pips" class="flex items-center gap-2">
+              <!-- pips injected by JS -->
+            </div>
+            <button
+              id="next-btn"
+              class="flex items-center justify-center w-7 h-7 border border-outline-variant hover:border-primary text-on-surface-variant hover:text-primary transition-colors"
+              aria-label="Next slide"
+            >
+              <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+            </button>
+          </div>
+
+          <!-- Diagnostic readout (bottom-right) -->
+          <div
+            class="absolute bottom-6 right-6 z-20 font-label-caps text-label-caps text-on-surface-variant/60 uppercase tracking-widest"
+          >
+            <span id="diagnostic-readout">SIG // STANDBY</span>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- ============ Transcript Drawer ============ -->
+    <aside
+      id="transcript-drawer"
+      class="drawer fixed top-20 right-0 bottom-24 w-full max-w-md bg-[#1A1A1A] border-l border-[#333333] z-40 flex flex-col"
+    >
+      <div class="flex items-center justify-between px-6 py-4 border-b border-outline-variant">
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-primary">terminal</span>
+          <span class="font-label-caps text-label-caps uppercase tracking-widest text-on-surface">
+            Transcript // Live
+          </span>
+        </div>
+        <button
+          id="transcript-close"
+          class="text-on-surface-variant hover:text-primary transition-colors"
+          aria-label="Close transcript"
+        >
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div id="transcript-log" class="flex-1 overflow-y-auto scroll-thin p-6 space-y-4 font-body-md">
+        <div class="text-on-surface-variant/50 text-sm italic">
+          No signal yet. Initiate the neural link to begin diagnostic capture.
+        </div>
+      </div>
+    </aside>
+
+    <!-- ============ BottomNavBar ============ -->
+    <div
+      class="fixed bottom-0 left-0 w-full z-50 flex items-center justify-between px-margin-desktop bg-surface-container-highest border-t border-outline-variant h-24"
+    >
+      <div class="flex items-center gap-6">
+        <button
+          id="mic-toggle"
+          class="w-12 h-12 rounded-full bg-surface-container border border-primary flex items-center justify-center relative hover:bg-[#1A1A1A] transition-colors"
+          title="Start / stop neural link"
+        >
+          <span
+            id="mic-ping"
+            class="absolute inset-0 rounded-full border border-primary animate-ping opacity-0"
+          ></span>
+          <span id="mic-icon" class="material-symbols-outlined text-primary">graphic_eq</span>
+        </button>
+        <div class="flex flex-col">
+          <span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">
+            Neural Link
+          </span>
+          <span id="agent-status" class="font-body-md text-primary">Voice Agent: Standby</span>
+        </div>
+        <div
+          class="flex items-center bg-surface-container p-1 border border-outline-variant ml-4"
+          id="agent-picker"
+        >
+          <button
+            data-agent="deepgram"
+            class="agent-pill px-3 py-1 text-[10px] font-label-caps uppercase tracking-widest bg-primary text-on-primary shadow-sm"
+          >
+            Agent A · Deepgram
+          </button>
+          <button
+            data-agent="local"
+            class="agent-pill px-3 py-1 text-[10px] font-label-caps uppercase tracking-widest text-on-surface-variant hover:text-on-surface"
+          >
+            Agent B · Local
+          </button>
+        </div>
+      </div>
+
+      <!-- Waveform -->
+      <div id="waveform" class="waveform idle flex items-center h-8 gap-[2px] opacity-80">
+        <div class="waveform-bar h-[20%]"></div>
+        <div class="waveform-bar h-[60%]"></div>
+        <div class="waveform-bar h-[100%]"></div>
+        <div class="waveform-bar h-[40%]"></div>
+        <div class="waveform-bar h-[80%]"></div>
+        <div class="waveform-bar h-[30%]"></div>
+        <div class="waveform-bar h-[70%]"></div>
+        <div class="waveform-bar h-[90%]"></div>
+        <div class="waveform-bar h-[50%]"></div>
+        <div class="waveform-bar h-[20%]"></div>
+        <div class="waveform-bar h-[65%]"></div>
+        <div class="waveform-bar h-[35%]"></div>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <button
+          id="mute-btn"
+          class="p-3 border border-outline-variant text-on-surface-variant hover:text-error hover:border-error transition-colors flex items-center justify-center group rounded-full"
+          title="Mute / interrupt"
+        >
+          <span id="mute-icon" class="material-symbols-outlined group-hover:scale-110 transition-transform">
+            mic
+          </span>
+        </button>
+        <button
+          id="transcript-toggle"
+          class="bg-surface text-on-surface border border-[#333333] px-6 py-3 font-label-caps text-label-caps uppercase tracking-widest hover:bg-[#1A1A1A] hover:border-primary hover:text-primary transition-colors flex items-center gap-2"
+        >
+          <span class="material-symbols-outlined text-[16px]">terminal</span>
+          View Transcript
+        </button>
+      </div>
+    </div>
+
+    <!-- ============ Client logic ============ -->
+    <script>
+      // ----------------------------------------------------------------
+      // Slide deck state
+      // ----------------------------------------------------------------
+      const SLIDE_COUNT = 7;
+      let currentSlide = 1;
+
+      const slideImage = document.getElementById("slide-image");
+      const slideTag = document.getElementById("slide-tag");
+      const indicatorPips = document.getElementById("indicator-pips");
+
+      function renderPips() {
+        indicatorPips.innerHTML = "";
+        for (let i = 1; i <= SLIDE_COUNT; i++) {
+          const pip = document.createElement("button");
+          pip.className =
+            i === currentSlide
+              ? "w-8 h-1 bg-primary transition-all"
+              : "w-2 h-1 bg-[#333333] hover:bg-outline transition-all";
+          pip.setAttribute("aria-label", `Go to slide ${i}`);
+          pip.addEventListener("click", () => setSlide(i));
+          indicatorPips.appendChild(pip);
+        }
+      }
+
+      function setSlide(n) {
+        const clamped = Math.max(1, Math.min(SLIDE_COUNT, n));
+        currentSlide = clamped;
+        slideImage.src = `/slides/${clamped}.jpg`;
+        slideImage.alt = `Slide ${clamped}`;
+        slideTag.textContent = `UNIT ${String(clamped).padStart(2, "0")} / ${String(SLIDE_COUNT).padStart(2, "0")}`;
+        renderPips();
+      }
+
+      document.getElementById("prev-btn").addEventListener("click", () => setSlide(currentSlide - 1));
+      document.getElementById("next-btn").addEventListener("click", () => setSlide(currentSlide + 1));
+      document.getElementById("hover-prev").addEventListener("click", () => setSlide(currentSlide - 1));
+      document.getElementById("hover-next").addEventListener("click", () => setSlide(currentSlide + 1));
+      window.addEventListener("keydown", (e) => {
+        if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+        if (e.key === "ArrowLeft") setSlide(currentSlide - 1);
+        if (e.key === "ArrowRight") setSlide(currentSlide + 1);
+      });
+
+      renderPips();
+
+      // ----------------------------------------------------------------
+      // Agent picker
+      // ----------------------------------------------------------------
+      let selectedAgent = "deepgram";
+      document.querySelectorAll(".agent-pill").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          selectedAgent = btn.dataset.agent;
+          document.querySelectorAll(".agent-pill").forEach((b) => {
+            const active = b === btn;
+            b.classList.toggle("bg-primary", active);
+            b.classList.toggle("text-on-primary", active);
+            b.classList.toggle("shadow-sm", active);
+            b.classList.toggle("text-on-surface-variant", !active);
+            b.classList.toggle("hover:text-on-surface", !active);
+          });
+          // If already connected, reconnect with new agent
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            stopNeuralLink();
+            startNeuralLink();
+          }
+        });
+      });
+
+      // ----------------------------------------------------------------
+      // Status readouts
+      // ----------------------------------------------------------------
+      const agentStatus = document.getElementById("agent-status");
+      const linkStatusLabel = document.getElementById("link-status-label");
+      const linkStatusDot = document.getElementById("link-status-dot");
+      const diagnosticReadout = document.getElementById("diagnostic-readout");
+      const waveformEl = document.getElementById("waveform");
+      const micIcon = document.getElementById("mic-icon");
+      const micPing = document.getElementById("mic-ping");
+      const muteIcon = document.getElementById("mute-icon");
+      const offlineBanner = document.getElementById("offline-banner");
+
+      function setStatus(mode) {
+        // mode ∈ 'idle' | 'listening' | 'speaking' | 'connecting' | 'error'
+        const map = {
+          idle: ["Voice Agent: Standby", "Neural Link Idle", "SIG // STANDBY"],
+          connecting: ["Voice Agent: Connecting…", "Neural Link Syncing", "SIG // HANDSHAKE"],
+          listening: ["Voice Agent: Listening…", "Neural Link Active", "SIG // RX"],
+          speaking: ["Voice Agent: Speaking…", "Neural Link Active", "SIG // TX"],
+          error: ["Voice Agent: Offline", "Neural Link Down", "SIG // FAULT"],
+        };
+        const [agent, link, diag] = map[mode] || map.idle;
+        agentStatus.textContent = agent;
+        linkStatusLabel.textContent = link;
+        diagnosticReadout.textContent = diag;
+
+        const active = mode === "listening" || mode === "speaking";
+        waveformEl.classList.toggle("idle", !active);
+        micPing.classList.toggle("opacity-20", active);
+        micPing.classList.toggle("opacity-0", !active);
+
+        if (mode === "error") {
+          linkStatusDot.classList.remove("bg-primary");
+          linkStatusDot.classList.add("bg-error");
+        } else {
+          linkStatusDot.classList.remove("bg-error");
+          linkStatusDot.classList.add("bg-primary");
+        }
+
+        // Randomize waveform bar heights while active to fake live reactivity
+        if (active) startWaveformPulse();
+        else stopWaveformPulse();
+      }
+
+      let waveformTimer = null;
+      function startWaveformPulse() {
+        if (waveformTimer) return;
+        const bars = waveformEl.querySelectorAll(".waveform-bar");
+        waveformTimer = setInterval(() => {
+          bars.forEach((b) => {
+            const h = 15 + Math.random() * 85;
+            b.style.height = `${h}%`;
+          });
+        }, 110);
+      }
+      function stopWaveformPulse() {
+        if (waveformTimer) {
+          clearInterval(waveformTimer);
+          waveformTimer = null;
+        }
+      }
+
+      setStatus("idle");
+
+      // ----------------------------------------------------------------
+      // Transcript drawer
+      // ----------------------------------------------------------------
+      const drawer = document.getElementById("transcript-drawer");
+      const transcriptLog = document.getElementById("transcript-log");
+      let transcriptOpened = false;
+
+      document.getElementById("transcript-toggle").addEventListener("click", () => {
+        drawer.classList.toggle("open");
+      });
+      document.getElementById("transcript-close").addEventListener("click", () => {
+        drawer.classList.remove("open");
+      });
+
+      function appendTranscript(role, text) {
+        if (!transcriptOpened) {
+          transcriptLog.innerHTML = "";
+          transcriptOpened = true;
+        }
+        const row = document.createElement("div");
+        const isAgent = role === "agent";
+        row.className = "border-l-2 pl-4 " + (isAgent ? "border-primary" : "border-outline-variant");
+        row.innerHTML = `
+          <div class="font-label-caps text-label-caps uppercase tracking-widest ${
+            isAgent ? "text-primary" : "text-on-surface-variant"
+          } mb-1">${isAgent ? "Agent" : "User"}</div>
+          <div class="text-on-surface text-sm leading-relaxed"></div>
+        `;
+        row.querySelector("div.text-on-surface").textContent = text;
+        transcriptLog.appendChild(row);
+        transcriptLog.scrollTop = transcriptLog.scrollHeight;
+      }
+
+      // ----------------------------------------------------------------
+      // Voice pipeline
+      // ----------------------------------------------------------------
+      let ws = null;
+      let audioCtx = null;
+      let micStream = null;
+      let micNode = null;
+      let micProcessor = null;
+      let playbackCtx = null;
+      let playbackTime = 0;
+      let muted = false;
+      let speakingTimeout = null;
+
+      const TARGET_SAMPLE_RATE = 16000;
+
+      async function startNeuralLink() {
+        if (ws && ws.readyState === WebSocket.OPEN) return;
+        setStatus("connecting");
+
+        try {
+          micStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              channelCount: 1,
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+            },
+          });
+        } catch (err) {
+          console.error("mic permission denied", err);
+          setStatus("error");
+          return;
+        }
+
+        const proto = location.protocol === "https:" ? "wss:" : "ws:";
+        const url = `${proto}//${location.host}/ws/voice?agent=${encodeURIComponent(selectedAgent)}`;
+        ws = new WebSocket(url);
+        ws.binaryType = "arraybuffer";
+
+        ws.onopen = () => {
+          offlineBanner.classList.add("hidden");
+          setStatus("listening");
+          startMicCapture();
+        };
+
+        ws.onmessage = (evt) => {
+          if (typeof evt.data === "string") {
+            handleTextFrame(evt.data);
+          } else {
+            handleAudioFrame(evt.data);
+          }
+        };
+
+        ws.onerror = () => {
+          offlineBanner.classList.remove("hidden");
+        };
+
+        ws.onclose = (evt) => {
+          stopMicCapture();
+          if (evt.code === 1011) {
+            offlineBanner.classList.remove("hidden");
+            setStatus("error");
+          } else {
+            setStatus("idle");
+          }
+          ws = null;
+        };
+      }
+
+      function stopNeuralLink() {
+        if (ws) {
+          try {
+            ws.close();
+          } catch (_) {}
+          ws = null;
+        }
+        stopMicCapture();
+        setStatus("idle");
+      }
+
+      function startMicCapture() {
+        if (!micStream) return;
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
+        micNode = audioCtx.createMediaStreamSource(micStream);
+        // ScriptProcessorNode is deprecated but universally supported; keeps things simple here.
+        micProcessor = audioCtx.createScriptProcessor(4096, 1, 1);
+        micNode.connect(micProcessor);
+        micProcessor.connect(audioCtx.destination);
+
+        micProcessor.onaudioprocess = (e) => {
+          if (muted || !ws || ws.readyState !== WebSocket.OPEN) return;
+          const input = e.inputBuffer.getChannelData(0);
+          const pcm16 = downsampleToPCM16(input, audioCtx.sampleRate, TARGET_SAMPLE_RATE);
+          ws.send(pcm16.buffer);
+        };
+      }
+
+      function stopMicCapture() {
+        try {
+          micProcessor && micProcessor.disconnect();
+          micNode && micNode.disconnect();
+          if (micStream) {
+            micStream.getTracks().forEach((t) => t.stop());
+          }
+          audioCtx && audioCtx.close();
+        } catch (_) {}
+        micProcessor = micNode = micStream = audioCtx = null;
+      }
+
+      function downsampleToPCM16(float32, srcRate, dstRate) {
+        const ratio = srcRate / dstRate;
+        const outLen = Math.floor(float32.length / ratio);
+        const out = new Int16Array(outLen);
+        let pos = 0;
+        for (let i = 0; i < outLen; i++) {
+          const start = Math.floor(i * ratio);
+          const end = Math.min(float32.length, Math.floor((i + 1) * ratio));
+          let sum = 0;
+          let count = 0;
+          for (let j = start; j < end; j++) {
+            sum += float32[j];
+            count++;
+          }
+          const sample = count > 0 ? sum / count : 0;
+          const clamped = Math.max(-1, Math.min(1, sample));
+          out[pos++] = clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff;
+        }
+        return out;
+      }
+
+      // ---------------- Inbound audio playback ----------------
+      // We assume inbound frames are 16-bit PCM mono at 24 kHz (Qwen3-TTS default)
+      // or 16 kHz (Deepgram default). We can't know for sure without a wire-format
+      // spec, so we treat them as 24 kHz — the common case — and resample to the
+      // playback context's native rate.
+      const INBOUND_SAMPLE_RATE = 24000;
+
+      function ensurePlaybackCtx() {
+        if (!playbackCtx) {
+          playbackCtx = new (window.AudioContext || window.webkitAudioContext)();
+          playbackTime = playbackCtx.currentTime;
+        }
+        return playbackCtx;
+      }
+
+      function handleAudioFrame(arrayBuf) {
+        const ctx = ensurePlaybackCtx();
+        const int16 = new Int16Array(arrayBuf);
+        if (int16.length === 0) return;
+
+        const float32 = new Float32Array(int16.length);
+        for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 0x8000;
+
+        const buf = ctx.createBuffer(1, float32.length, INBOUND_SAMPLE_RATE);
+        buf.copyToChannel(float32, 0);
+
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(ctx.destination);
+
+        const startAt = Math.max(ctx.currentTime, playbackTime);
+        src.start(startAt);
+        playbackTime = startAt + buf.duration;
+
+        // Flip status to speaking while TTS plays
+        setStatus("speaking");
+        clearTimeout(speakingTimeout);
+        speakingTimeout = setTimeout(() => {
+          if (ws && ws.readyState === WebSocket.OPEN) setStatus("listening");
+        }, Math.max(300, buf.duration * 1000 + 200));
+      }
+
+      function handleTextFrame(text) {
+        let parsed = null;
+        try {
+          parsed = JSON.parse(text);
+        } catch (_) {
+          /* plain text */
+        }
+        if (parsed && typeof parsed === "object") {
+          // Tool-call contract from README: change_slide(index:int)
+          if (
+            parsed.type === "tool_call" &&
+            parsed.name === "change_slide" &&
+            parsed.arguments &&
+            typeof parsed.arguments.index === "number"
+          ) {
+            setSlide(parsed.arguments.index);
+            return;
+          }
+          // Transcript-style messages (best-effort; keys vary by upstream)
+          if (parsed.role && parsed.text) {
+            appendTranscript(parsed.role === "assistant" ? "agent" : "user", parsed.text);
+            return;
+          }
+          if (parsed.type === "transcript" && parsed.text) {
+            appendTranscript(parsed.speaker === "agent" ? "agent" : "user", parsed.text);
+            return;
+          }
+        }
+        // Fallback: treat as user-visible log line
+        appendTranscript("agent", typeof text === "string" ? text : JSON.stringify(parsed));
+      }
+
+      // ---------------- Mic button / mute ----------------
+      document.getElementById("mic-toggle").addEventListener("click", () => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          stopNeuralLink();
+        } else {
+          startNeuralLink();
+        }
+      });
+
+      document.getElementById("mute-btn").addEventListener("click", () => {
+        muted = !muted;
+        muteIcon.textContent = muted ? "mic_off" : "mic";
+        // Also flush any in-flight TTS playback (barge-in visual cue)
+        if (muted && playbackCtx) {
+          playbackTime = playbackCtx.currentTime;
+        }
+      });
+    </script>
   </body>
 </html>
