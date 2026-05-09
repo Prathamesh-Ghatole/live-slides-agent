@@ -3,12 +3,16 @@ Bridge between the browser WebSocket and Deepgram's Voice Agent API.
 
 Responsibilities:
 - Open a WS to `wss://agent.deepgram.com/v1/agent/converse` with our API key.
-- Send a `Settings` frame configured from our `agent/` module (prompt, greeting, tools).
+- Send a `Settings` frame built by `agent.deepgram_config`.
 - Forward raw PCM16 audio in both directions.
 - Translate Deepgram's JSON events into the small contract our frontend already speaks:
     * `FunctionCallRequest` → `{type: "tool_call", name, arguments}` (and ack back to Deepgram)
     * `ConversationText`    → `{type: "transcript", speaker, text}`
   Everything else is logged and dropped.
+
+All provider / model / voice configuration lives in
+`agent/deepgram_config.py` — nothing in this file should need editing to
+change models or voices.
 """
 
 from __future__ import annotations
@@ -23,72 +27,14 @@ from typing import Any
 import websockets
 from fastapi import WebSocket, WebSocketDisconnect
 
-from .agent import FUNCTIONS, GREETING, PROMPT
+from .agent.deepgram_config import settings_payload
 
 logger = logging.getLogger(__name__)
 
 DEEPGRAM_AGENT_URL = "wss://agent.deepgram.com/v1/agent/converse"
 
-# Matches what the browser already produces / plays back (see static/index.html).
-INPUT_SAMPLE_RATE = 16000
-OUTPUT_SAMPLE_RATE = 24000
-
-# Same cap as the local-agent path.
+# Same cap as the local-agent path (see app.py).
 MAX_WS_MESSAGE_BYTES = 64 * 1024 * 1024
-
-
-# Cartesia Sonic-2, "Brooke" — warm authoritative female. Override with
-# DEEPGRAM_SPEAK_PROVIDER_JSON if you want to try another voice without code changes.
-DEFAULT_SPEAK_PROVIDER: dict[str, Any] = {
-    "type": "cartesia",
-    "model_id": "sonic-2",
-    "voice": {"mode": "id", "id": "a167e0f3-df7e-4d52-a9c3-f949145efdab"},
-    "speed": "normal",
-}
-
-
-def _speak_provider() -> dict[str, Any]:
-    override = os.environ.get("DEEPGRAM_SPEAK_PROVIDER_JSON")
-    if override:
-        try:
-            return json.loads(override)
-        except json.JSONDecodeError:
-            logger.warning(
-                "DEEPGRAM_SPEAK_PROVIDER_JSON is not valid JSON; using default"
-            )
-    return DEFAULT_SPEAK_PROVIDER
-
-
-def _functions_payload() -> list[dict[str, Any]]:
-    # Functions without an `endpoint` are executed client-side by Deepgram's
-    # contract — which is exactly what we want (we handle them in this bridge /
-    # the browser). So: just pass them through untouched.
-    return list(FUNCTIONS)
-
-
-def _settings_payload() -> dict[str, Any]:
-    return {
-        "type": "Settings",
-        "audio": {
-            "input": {"encoding": "linear16", "sample_rate": INPUT_SAMPLE_RATE},
-            "output": {
-                "encoding": "linear16",
-                "sample_rate": OUTPUT_SAMPLE_RATE,
-                "container": "none",
-            },
-        },
-        "agent": {
-            "language": "en",
-            "listen": {"provider": {"type": "deepgram", "model": "nova-3"}},
-            "think": {
-                "provider": {"type": "open_ai", "model": "gpt-4o-mini"},
-                "prompt": PROMPT,
-                "functions": _functions_payload(),
-            },
-            "speak": {"provider": _speak_provider()},
-            "greeting": GREETING,
-        },
-    }
 
 
 async def bridge_deepgram(browser: WebSocket) -> None:
@@ -111,7 +57,7 @@ async def bridge_deepgram(browser: WebSocket) -> None:
         return
 
     try:
-        await dg.send(json.dumps(_settings_payload()))
+        await dg.send(json.dumps(settings_payload()))
         done, pending = await asyncio.wait(
             {
                 asyncio.create_task(_browser_to_dg(browser, dg)),
