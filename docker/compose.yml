@@ -20,3 +20,6 @@ services:
     # On Docker Desktop for Mac this requires enabling host networking
     # (Settings → Resources → Network → "Enable host networking").
     network_mode: host
+    # Mirror runtime logs onto the host so `tail -f logs/…` works from the repo root.
+    volumes:
+      - ../logs:/app/logs

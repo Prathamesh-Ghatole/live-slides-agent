@@ -16,13 +16,53 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 import websockets
+from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from .voice_deepgram import bridge_deepgram
+
+load_dotenv(override=False)
+
+
+def _setup_logging() -> None:
+    """Log to console (as before) and tee to logs/live-slides-agent.log."""
+    root = logging.getLogger()
+    if getattr(root, "_lsa_file_handler_attached", False):
+        return  # idempotent across reloads
+
+    root.setLevel(logging.INFO)
+    fmt = logging.Formatter(
+        "%(asctime)s %(levelname)s %(name)s: %(message)s", "%Y-%m-%d %H:%M:%S"
+    )
+
+    # Console — keep uvicorn's existing stderr handler; only add one if none.
+    if not any(isinstance(h, logging.StreamHandler) for h in root.handlers):
+        sh = logging.StreamHandler()
+        sh.setFormatter(fmt)
+        root.addHandler(sh)
+
+    # File — logs/ dir is resolvable from $LSA_LOG_DIR or the project root.
+    log_dir = Path(os.environ.get("LSA_LOG_DIR", "logs"))
+    log_dir.mkdir(parents=True, exist_ok=True)
+    fh = RotatingFileHandler(
+        log_dir / "live-slides-agent.log",
+        maxBytes=5 * 1024 * 1024,
+        backupCount=3,
+        encoding="utf-8",
+    )
+    fh.setFormatter(fmt)
+    root.addHandler(fh)
+    root._lsa_file_handler_attached = True  # type: ignore[attr-defined]
+
+
+_setup_logging()
 logger = logging.getLogger(__name__)
 
 # With host networking (see docker-compose.yml), localhost inside the
@@ -59,19 +99,28 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 @app.websocket("/ws/voice")
 async def voice_proxy(ws: WebSocket) -> None:
-    """Bidirectional proxy between the browser and the voice WS server."""
+    """Bidirectional proxy between the browser and the selected voice agent."""
     await ws.accept()
-    logger.info("browser connected; dialing %s", VOICE_WS_URL)
+    agent = ws.query_params.get("agent", "local")
+    logger.info("browser connected; agent=%s", agent)
+
+    if agent == "deepgram":
+        await bridge_deepgram(ws)
+        return
 
     try:
-        async with websockets.connect(VOICE_WS_URL, max_size=MAX_WS_MESSAGE_BYTES) as upstream:
+        async with websockets.connect(
+            VOICE_WS_URL, max_size=MAX_WS_MESSAGE_BYTES
+        ) as upstream:
             await _pipe(ws, upstream)
     except (OSError, websockets.WebSocketException) as exc:
         logger.warning("voice upstream unreachable: %s", exc)
         await ws.close(code=1011, reason="voice server unavailable")
 
 
-async def _pipe(browser: WebSocket, upstream: websockets.WebSocketClientProtocol) -> None:
+async def _pipe(
+    browser: WebSocket, upstream: websockets.WebSocketClientProtocol
+) -> None:
     async def browser_to_upstream() -> None:
         try:
             while True:
@@ -96,7 +145,10 @@ async def _pipe(browser: WebSocket, upstream: websockets.WebSocketClientProtocol
             return
 
     done, pending = await asyncio.wait(
-        {asyncio.create_task(browser_to_upstream()), asyncio.create_task(upstream_to_browser())},
+        {
+            asyncio.create_task(browser_to_upstream()),
+            asyncio.create_task(upstream_to_browser()),
+        },
         return_when=asyncio.FIRST_COMPLETED,
     )
     for task in pending:
