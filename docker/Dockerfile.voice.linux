@@ -1,0 +1,39 @@
+# Voice pipeline (speech-to-speech) on Linux / CUDA.
+# Intentionally kept minimal — this path is not exercised in day-to-day
+# development right now; the primary target is macOS bare metal.
+FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    UV_LINK_MODE=copy \
+    UV_COMPILE_BYTECODE=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      python3.12 python3.12-venv python3-pip \
+      ffmpeg libsndfile1 ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf /usr/bin/python3.12 /usr/local/bin/python
+
+RUN python -m pip install --no-cache-dir uv
+
+WORKDIR /app
+
+# Create the non-root user up front (hardening). USER/HOME are applied
+# only *after* the root-owned uv builds complete.
+RUN adduser --system --group --home /home/appuser appuser
+
+COPY pyproject.toml uv.lock README.md ./
+RUN uv sync --frozen --no-dev --extra voice --no-install-project
+
+COPY src ./src
+COPY scripts/run_speech_to_speech_server.linux.sh ./
+RUN chmod +x run_speech_to_speech_server.linux.sh \
+    && uv sync --frozen --no-dev --extra voice \
+    && chown -R appuser:appuser /app /home/appuser
+
+ENV HOME=/home/appuser
+USER appuser
+
+EXPOSE 8765
+CMD ["bash", "./run_speech_to_speech_server.linux.sh"]

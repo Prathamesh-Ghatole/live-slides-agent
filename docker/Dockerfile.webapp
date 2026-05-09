@@ -1,0 +1,38 @@
+# Slim FastAPI image. Does NOT include the speech-to-speech stack —
+# that lives in Dockerfile.voice.linux (or runs bare metal on macOS).
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    UV_LINK_MODE=copy \
+    UV_COMPILE_BYTECODE=1
+
+# uv: fast Python package manager (matches the rest of the project).
+# Installed via pip to avoid ghcr.io auth hassles.
+RUN pip install --no-cache-dir uv
+
+WORKDIR /app
+
+# Create the non-root user up front (hardening). We apply USER and HOME
+# only *after* the root-owned uv builds so they don't poison the user's
+# cache directory.
+RUN adduser --system --group --home /home/appuser appuser
+
+# Install deps first (better layer cache).
+COPY pyproject.toml uv.lock README.md ./
+RUN uv sync --frozen --no-dev --no-install-project
+
+# Now copy source and install the project itself.
+COPY src ./src
+RUN uv sync --frozen --no-dev \
+    && chown -R appuser:appuser /app /home/appuser
+
+ENV HOME=/home/appuser
+USER appuser
+
+EXPOSE 8000
+# --ws-max-size bounds frames coming FROM the browser; the upstream cap is
+# enforced inside app.py via websockets.connect(max_size=...). 64 MiB.
+CMD ["uv", "run", "uvicorn", "live_slides_agent.app:app", \
+     "--host", "0.0.0.0", "--port", "8000", \
+     "--ws-max-size", "67108864"]

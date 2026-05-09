@@ -1,0 +1,22 @@
+# Base compose file. On macOS this is the only file needed; the voice
+# server runs bare metal on the host (via run.sh) and the webapp reaches
+# it on localhost thanks to host networking.
+#
+# NOTE on network_mode: host
+# --------------------------
+# This is a deliberate design choice, not laziness. MLX can't run inside
+# Docker, so on macOS the voice server MUST run on the host. Using host
+# networking lets the webapp container reach it at `localhost:8765` with
+# zero env-var configuration — which matches the project's "just works"
+# contract. A bridge network would force us to branch the upstream URL
+# between `host.docker.internal` (Mac) and `voice:8765` (Linux), which we
+# explicitly rejected.
+services:
+  webapp:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.webapp
+    env_file: ../.env
+    # On Docker Desktop for Mac this requires enabling host networking
+    # (Settings → Resources → Network → "Enable host networking").
+    network_mode: host

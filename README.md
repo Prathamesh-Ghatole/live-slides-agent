@@ -50,16 +50,34 @@ flowchart LR
 ## Setup
 
 ```bash
-uv sync
 cp .env.sample .env   # fill in OPENAI_API_KEY (OpenRouter), etc.
+uv sync --extra voice # pulls in speech-to-speech for the bare-metal voice server on macOS
 ```
+
+**Docker Desktop for Mac only:** enable host networking in
+_Settings → Resources → Network → "Enable host networking"_. This lets the
+webapp container reach the voice server on `localhost:8765` without any
+env-var juggling. On Linux it's already on by default.
 
 ## Run
 
 ```bash
-# Agent B voice pipeline
-./run_speech_to_speech_server.sh
-
-# FastAPI app (coming soon)
-uv run uvicorn live_slides_agent.app:app --reload
+./run.sh
 ```
+
+`run.sh` detects the OS:
+
+- **macOS** → starts `scripts/run_speech_to_speech_server.sh` on the host (MLX), then `docker compose -f docker/compose.yml up` for the webapp.
+- **Linux** → `docker compose -f docker/compose.yml -f docker/compose.linux.yml up` — both services containerized.
+
+Open <http://localhost:8000>.
+
+## Operational notes
+
+- Containers run as a non-root `appuser`.
+- WebSocket frames are capped at 64 MiB end-to-end (uvicorn `--ws-max-size` + `websockets.connect(max_size=…)` in the proxy).
+- On macOS, `run.sh` pre-checks port 8765 and fails fast if a previous voice server is still listening. Clean up stragglers with:
+
+  ```bash
+  pkill -f 'speech-to-speech --mode realtime'
+  ```
