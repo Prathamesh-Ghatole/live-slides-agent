@@ -1,0 +1,16 @@
+{
+  "name": "change_slide",
+  "description": "Advances or jumps to a specific slide in the Feline.ai pitch deck. Call this BEFORE delivering the talking point for the target slide so the visual and voice stay in sync. The deck has 7 slides: 1) Title/Vision, 2) Human Hardware Failure, 3) Bio-Autonomous Units, 4) Scientific ROI, 5) Hardware Tiers (Onyx/Ember/Zenith), 6) Zero CAC Growth, 7) Hard Sell & Close. Use this whenever the user asks to go back, skip ahead, revisit a slide, or when you are ready to progress the narrative.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "index": {
+        "type": "integer",
+        "description": "The target slide number, from 1 to 7.",
+        "minimum": 1,
+        "maximum": 7
+      }
+    },
+    "required": ["index"]
+  }
+}

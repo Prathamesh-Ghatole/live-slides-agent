@@ -81,3 +81,11 @@ Open <http://localhost:8000>.
   ```bash
   pkill -f 'speech-to-speech --mode realtime'
   ```
+
+## Coming Soon
+
+Planned agent capabilities beyond the current `change_slide` + `end_conversation` tools:
+
+- **`capture_tier_selection`** — record the user's choice of hardware tier (Onyx / Ember / Zenith) on Slide 5 to personalize the rest of the pitch.
+- **`send_adoption_docs`** — email the adoption documents once the user consents on Slide 7.
+- **`log_objection`** — capture skepticism patterns ("it's just a cat," pricing pushback) for later review.
