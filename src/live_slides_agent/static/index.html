@@ -134,6 +134,28 @@
       .drawer.open {
         transform: translateX(0);
       }
+      /* Layout shift when transcript is docked — slides move left, bottom nav
+         reflows so its controls stay visible beside the drawer. */
+      #main-stage,
+      #bottom-nav {
+        transition: margin-right 220ms ease-out, padding-right 220ms ease-out;
+      }
+      body.drawer-open #main-stage {
+        margin-right: 28rem; /* matches drawer max-w-md (448px) */
+      }
+      body.drawer-open #bottom-nav {
+        /* keep original px-margin-desktop (64px) and add drawer width */
+        padding-right: calc(64px + 28rem);
+      }
+      @media (max-width: 900px) {
+        /* Not enough room to dock on small screens — fall back to overlay. */
+        body.drawer-open #main-stage {
+          margin-right: 0;
+        }
+        body.drawer-open #bottom-nav {
+          padding-right: 64px;
+        }
+      }
       /* Hide scrollbars inside transcript but keep scrolling */
       .scroll-thin::-webkit-scrollbar {
         width: 6px;
@@ -180,6 +202,7 @@
     <!-- ============ Main Stage ============ -->
     <div class="flex flex-1 pt-20 pb-24 h-full">
       <main
+        id="main-stage"
         class="flex-1 ml-0 flex items-center justify-center p-gutter h-full overflow-hidden">
         <!-- Presentation Canvas -->
         <div
@@ -284,6 +307,7 @@
 
     <!-- ============ BottomNavBar ============ -->
     <div
+      id="bottom-nav"
       class="fixed bottom-0 left-0 w-full z-50 flex items-center justify-between px-margin-desktop bg-surface-container-highest border-t border-outline-variant h-24">
       <div class="flex items-center gap-6">
         <button
@@ -513,10 +537,12 @@
       let transcriptOpened = false;
 
       document.getElementById("transcript-toggle").addEventListener("click", () => {
-        drawer.classList.toggle("open");
+        const isOpen = drawer.classList.toggle("open");
+        document.body.classList.toggle("drawer-open", isOpen);
       });
       document.getElementById("transcript-close").addEventListener("click", () => {
         drawer.classList.remove("open");
+        document.body.classList.remove("drawer-open");
       });
 
       function appendTranscript(role, text) {
