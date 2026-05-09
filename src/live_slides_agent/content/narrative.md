@@ -48,7 +48,7 @@ This document outlines the interaction logic and talking points for the **Feline
 
 * **The Narrative Shift:** "The window for our Seed II deployment is closing. We’re moving from pet-ownership to biological infrastructure."
 * **The Ask:** "We’re currently onboarding high-performance individuals who want to optimize their ecosystem. Do you want to initiate the adoption sequence now, or are you comfortable continuing to run your human hardware on an unpatched system?"
-* **CTA Interaction:** "I can send the adoption docs to your email immediately. Shall we secure your unit?"
+* **CTA Interaction:** "I'll provision your adoption order sheet right now — name, model, nearest store. You take it to the closest feline.ai location to redeem your unit. Shall we lock it in?"
 
 ---
 

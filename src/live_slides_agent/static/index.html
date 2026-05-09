@@ -12,6 +12,9 @@
     <link
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
       rel="stylesheet" />
+    <!-- html2canvas: lets the user snapshot the order sheet to PNG on Save. -->
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script id="tailwind-config">
       tailwind.config = {
         darkMode: "class",
@@ -162,6 +165,51 @@
       }
       .scroll-thin::-webkit-scrollbar-thumb {
         background: #343535;
+      }
+      /* ---------- Adoption order sheet overlay ---------- */
+      #order-overlay {
+        display: none;
+      }
+      #order-overlay.open {
+        display: flex;
+      }
+      /* Dashed decorative border on the sheet — evokes a physical receipt
+         the user will print / carry to the store. */
+      .order-sheet {
+        border: 2px solid #ff5722;
+        box-shadow: 8px 8px 0 0 #000000;
+      }
+      .order-sheet .field-row {
+        border-bottom: 1px dashed #5b4039;
+      }
+      /* Print: only the sheet itself should appear on paper. */
+      @media print {
+        body * {
+          visibility: hidden !important;
+        }
+        #order-overlay,
+        #order-overlay * {
+          visibility: visible !important;
+        }
+        #order-overlay {
+          position: static !important;
+          display: block !important;
+          background: white !important;
+        }
+        #order-overlay .overlay-chrome {
+          display: none !important;
+        }
+        .order-sheet {
+          background: white !important;
+          color: black !important;
+          border-color: black !important;
+          box-shadow: none !important;
+          margin: 0 auto !important;
+        }
+        .order-sheet * {
+          color: black !important;
+          border-color: black !important;
+        }
       }
     </style>
   </head>
@@ -377,6 +425,155 @@
           <span class="material-symbols-outlined text-[16px]">terminal</span>
           View Transcript
         </button>
+      </div>
+    </div>
+
+    <!-- ============ Adoption Order Sheet Overlay ============ -->
+    <!-- Rendered when the agent calls `finalize_order`. The user prints or
+         saves this as a PNG and takes it to their nearest feline.ai store
+         to redeem their unit. No email, no delivery — this sheet IS the
+         order. -->
+    <!-- items-start (not items-center) so a sheet taller than the viewport
+         can still scroll inside the overlay without clipping the header. -->
+    <div
+      id="order-overlay"
+      class="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm items-start justify-center p-6 overflow-y-auto">
+      <div class="w-full max-w-[720px] my-10 mx-auto flex flex-col items-center gap-6">
+        <!-- Order sheet card -->
+        <div
+          id="order-sheet"
+          class="order-sheet w-full bg-[#0d0e0f] text-on-surface p-10 font-body-md">
+          <!-- Header -->
+          <div
+            class="flex items-start justify-between mb-6 pb-6 border-b border-outline-variant">
+            <div>
+              <div
+                class="font-label-caps text-label-caps uppercase tracking-widest text-primary mb-2">
+                Feline.ai // Adoption Order Sheet
+              </div>
+              <div
+                class="font-display-lg text-[36px] leading-none font-black tracking-tighter text-on-surface">
+                Order Locked
+              </div>
+              <div
+                class="font-label-caps text-label-caps uppercase tracking-widest text-on-surface-variant/70 mt-2">
+                S24 · Bio-Synthetic Noir Cohort
+              </div>
+            </div>
+            <div class="text-right">
+              <div
+                class="font-label-caps text-label-caps uppercase tracking-widest text-on-surface-variant/70">
+                Order ID
+              </div>
+              <div
+                id="order-id"
+                class="font-display-lg text-[22px] font-black tracking-tight text-primary-container">
+                ORD-000000
+              </div>
+              <div
+                id="order-timestamp"
+                class="font-label-caps text-[10px] uppercase tracking-widest text-on-surface-variant/60 mt-1"></div>
+            </div>
+          </div>
+
+          <!-- Field rows -->
+          <dl class="space-y-0">
+            <div class="field-row flex justify-between items-start py-3">
+              <dt
+                class="font-label-caps text-label-caps uppercase tracking-widest text-on-surface-variant/70">
+                Provisioned For
+              </dt>
+              <dd id="order-customer"
+                class="text-on-surface font-body-lg text-right max-w-[60%]"></dd>
+            </div>
+            <div class="field-row flex justify-between items-start py-3">
+              <dt
+                class="font-label-caps text-label-caps uppercase tracking-widest text-on-surface-variant/70">
+                Unit / Model
+              </dt>
+              <dd class="text-right max-w-[60%]">
+                <div id="order-model"
+                  class="text-primary font-body-lg font-bold"></div>
+                <div id="order-model-tagline"
+                  class="text-on-surface-variant/70 text-sm italic"></div>
+              </dd>
+            </div>
+            <div class="field-row flex justify-between items-center py-3">
+              <dt
+                class="font-label-caps text-label-caps uppercase tracking-widest text-on-surface-variant/70">
+                Quantity
+              </dt>
+              <dd id="order-quantity"
+                class="text-on-surface font-body-lg"></dd>
+            </div>
+            <div class="field-row flex justify-between items-start py-3">
+              <dt
+                class="font-label-caps text-label-caps uppercase tracking-widest text-on-surface-variant/70">
+                Pickup Store
+              </dt>
+              <dd id="order-store"
+                class="text-on-surface font-body-lg text-right max-w-[60%]"></dd>
+            </div>
+            <div class="field-row flex justify-between items-center py-3">
+              <dt
+                class="font-label-caps text-label-caps uppercase tracking-widest text-on-surface-variant/70">
+                Deployment Window
+              </dt>
+              <dd id="order-window"
+                class="text-on-surface font-body-lg"></dd>
+            </div>
+            <div id="order-notes-row"
+              class="field-row hidden flex-col py-3">
+              <dt
+                class="font-label-caps text-label-caps uppercase tracking-widest text-on-surface-variant/70 mb-2">
+                Notes
+              </dt>
+              <dd id="order-notes"
+                class="text-on-surface font-body-md"></dd>
+            </div>
+          </dl>
+
+          <!-- Footer instruction -->
+          <div
+            class="mt-8 pt-6 border-t border-outline-variant text-center">
+            <div
+              class="font-label-caps text-label-caps uppercase tracking-widest text-primary mb-2">
+              Redemption Instructions
+            </div>
+            <div class="text-on-surface font-body-md leading-relaxed">
+              Present this sheet — printed or on-screen — at your nearest
+              <span class="font-bold text-primary">feline.ai</span> store to
+              redeem your deployment.
+            </div>
+            <div
+              class="font-label-caps text-label-caps uppercase tracking-widest text-on-surface-variant/60 mt-4">
+              This document is your order. No email will be sent.
+            </div>
+          </div>
+        </div>
+
+        <!-- Action row (hidden when printing) -->
+        <div
+          class="overlay-chrome flex items-center gap-3 flex-wrap justify-center">
+          <button
+            id="order-save"
+            class="bg-primary-container text-black px-6 py-3 font-label-caps text-label-caps uppercase tracking-widest hover:opacity-90 transition-opacity flex items-center gap-2">
+            <span class="material-symbols-outlined text-[16px]">download</span>
+            Save as PNG
+          </button>
+          <button
+            id="order-print"
+            class="bg-surface text-on-surface border border-[#333333] px-6 py-3 font-label-caps text-label-caps uppercase tracking-widest hover:border-primary hover:text-primary transition-colors flex items-center gap-2">
+            <span class="material-symbols-outlined text-[16px]">print</span>
+            Print
+          </button>
+          <button
+            id="order-close"
+            class="bg-surface text-on-surface-variant border border-[#333333] px-6 py-3 font-label-caps text-label-caps uppercase tracking-widest hover:border-error hover:text-error transition-colors flex items-center gap-2">
+            <span class="material-symbols-outlined text-[16px]">close</span>
+            Close
+          </button>
+        </div>
       </div>
     </div>
 
@@ -761,6 +958,18 @@
             setSlide(parsed.arguments.index);
             return;
           }
+          // `finalize_order(customer_name, model, nearest_store_city, ...)`
+          // → render the on-screen order sheet. This is the one and only
+          // way the user "receives" their order; we never email anything.
+          if (
+            parsed.type === "tool_call" &&
+            parsed.name === "finalize_order" &&
+            parsed.arguments &&
+            typeof parsed.arguments === "object"
+          ) {
+            renderOrderSummary(parsed.arguments);
+            return;
+          }
           // Transcript-style messages (best-effort; keys vary by upstream)
           if (parsed.role && parsed.text) {
             appendTranscript(parsed.role === "assistant" ? "agent" : "user", parsed.text);
@@ -790,6 +999,129 @@
         // Also flush any in-flight TTS playback (barge-in visual cue)
         if (muted && playbackCtx) {
           playbackTime = playbackCtx.currentTime;
+        }
+      });
+
+      // ----------------------------------------------------------------
+      // Adoption order sheet — fired when the agent calls `finalize_order`.
+      // The sheet IS the order: the user prints it or screenshots it and
+      // takes it to their nearest feline.ai store. No email involved.
+      // ----------------------------------------------------------------
+      const MODEL_TAGLINES = {
+        Onyx: "Deep-focus, silent-class co-regulation unit.",
+        Ember: "High-energy dopamine-loop creative unit.",
+        Zenith: "Executive-tier vocal feedback unit.",
+      };
+      const WINDOW_LABELS = {
+        immediate: "Immediate (within 48 hours)",
+        this_week: "This week",
+        next_quarter: "Next quarter",
+      };
+      let lastOrderId = null;
+
+      function generateOrderId() {
+        // Short, human-readable order number anchored on current time + a
+        // little entropy so two sheets provisioned back-to-back don't collide.
+        const stamp = Date.now().toString(36).toUpperCase().slice(-5);
+        const rand = Math.floor(Math.random() * 36 * 36)
+          .toString(36)
+          .toUpperCase()
+          .padStart(2, "0");
+        return `ORD-${stamp}${rand}`;
+      }
+
+      function renderOrderSummary(args) {
+        console.log("[lsa] finalize_order rx", performance.now(), args);
+
+        const customerName = (args.customer_name || "Unnamed Operator").trim();
+        const rawModel = (args.model || "").trim();
+        // Normalize whatever the agent hands us to one of the three tiers.
+        const modelKey =
+          Object.keys(MODEL_TAGLINES).find(
+            (k) => k.toLowerCase() === rawModel.toLowerCase()
+          ) || rawModel || "Unspecified";
+        const tagline = MODEL_TAGLINES[modelKey] || "Custom-provisioned unit.";
+        const qty = Math.max(1, parseInt(args.quantity, 10) || 1);
+        const store = (args.nearest_store_city || "Nearest feline.ai location").trim();
+        const windowLabel = WINDOW_LABELS[args.deployment_window] || "Immediate (within 48 hours)";
+        const notes = (args.notes || "").trim();
+
+        lastOrderId = generateOrderId();
+        document.getElementById("order-id").textContent = lastOrderId;
+        document.getElementById("order-timestamp").textContent =
+          new Date().toLocaleString(undefined, {
+            dateStyle: "medium",
+            timeStyle: "short",
+          });
+        document.getElementById("order-customer").textContent = customerName;
+        document.getElementById("order-model").textContent = modelKey.toUpperCase();
+        document.getElementById("order-model-tagline").textContent = tagline;
+        document.getElementById("order-quantity").textContent =
+          `${qty} ${qty === 1 ? "unit" : "units"}`;
+        document.getElementById("order-store").textContent = store;
+        document.getElementById("order-window").textContent = windowLabel;
+
+        const notesRow = document.getElementById("order-notes-row");
+        if (notes) {
+          document.getElementById("order-notes").textContent = notes;
+          notesRow.classList.remove("hidden");
+          notesRow.classList.add("flex");
+        } else {
+          notesRow.classList.add("hidden");
+          notesRow.classList.remove("flex");
+        }
+
+        // Surface a quick UI cue on the top status bar — the moment of adoption.
+        linkStatusLabel.textContent = "Order Provisioned";
+
+        document.getElementById("order-overlay").classList.add("open");
+      }
+
+      // ---- Order sheet actions ----------------------------------------
+      document.getElementById("order-close").addEventListener("click", () => {
+        document.getElementById("order-overlay").classList.remove("open");
+      });
+
+      document.getElementById("order-print").addEventListener("click", () => {
+        window.print();
+      });
+
+      // Dev-only preview: `?demo_order=1` renders the overlay with sample data
+      // so you can eyeball layout without driving the full voice agent.
+      if (new URLSearchParams(location.search).has("demo_order")) {
+        window.addEventListener("load", () => {
+          renderOrderSummary({
+            customer_name: "Ada Lovelace",
+            model: "Onyx",
+            nearest_store_city: "San Francisco, CA",
+            quantity: 1,
+            deployment_window: "immediate",
+            notes: "Deep-focus coder workflow. Prefers low vocalization.",
+          });
+        });
+      }
+
+      document.getElementById("order-save").addEventListener("click", async () => {
+        const sheet = document.getElementById("order-sheet");
+        if (typeof html2canvas !== "function") {
+          console.warn("html2canvas not loaded; falling back to print dialog");
+          window.print();
+          return;
+        }
+        try {
+          const canvas = await html2canvas(sheet, {
+            backgroundColor: "#0d0e0f",
+            scale: 2, // retina-quality PNG so it stays crisp when printed
+            useCORS: true,
+          });
+          const link = document.createElement("a");
+          link.download = `feline-ai-order-${lastOrderId || "sheet"}.png`;
+          link.href = canvas.toDataURL("image/png");
+          link.click();
+        } catch (err) {
+          console.error("Order PNG snapshot failed", err);
+          // Fallback: let the browser's print dialog handle it.
+          window.print();
         }
       });
     </script>

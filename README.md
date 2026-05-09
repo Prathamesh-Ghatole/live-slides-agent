@@ -42,8 +42,10 @@ flowchart LR
 **Contract on `/ws/voice`**
 
 - Carries bidirectional audio frames between the browser and the selected agent.
-- Carries tool-calls from the agent back to the browser. For now the only tool is:
+- Carries tool-calls from the agent back to the browser. Current tools:
   - `change_slide(index: int)` — browser advances the deck to `index`.
+  - `finalize_order(customer_name, model, nearest_store_city, quantity?, deployment_window?, notes?)` — browser renders the final adoption order sheet overlay, which the user can save as a PNG or print and take to their nearest feline.ai store to redeem. No email is ever sent.
+  - `end_conversation(item)` — browser closes the session after the agent's sign-off.
 - Agent choice (`deepgram` or `local`) is sent as a query param when the WS connects, based on the user's selection in the UI.
 - Barge-in / interrupt is handled by the voice agent's built-in VAD (Deepgram in Agent A, realtime-mode VAD in Agent B).
 
@@ -84,8 +86,7 @@ Open <http://localhost:8000>.
 
 ## Coming Soon
 
-Planned agent capabilities beyond the current `change_slide` + `end_conversation` tools:
+Planned agent capabilities beyond the current `change_slide`, `finalize_order`, and `end_conversation` tools:
 
-- **`capture_tier_selection`** — record the user's choice of hardware tier (Onyx / Ember / Zenith) on Slide 5 to personalize the rest of the pitch.
-- **`send_adoption_docs`** — email the adoption documents once the user consents on Slide 7.
+- **`capture_tier_selection`** — record the user's choice of hardware tier (Onyx / Ember / Zenith) on Slide 5 to personalize the rest of the pitch, independent of order provisioning.
 - **`log_objection`** — capture skepticism patterns ("it's just a cat," pricing pushback) for later review.
