@@ -33,7 +33,10 @@ logger = logging.getLogger(__name__)
 
 DEEPGRAM_AGENT_URL = "wss://agent.deepgram.com/v1/agent/converse"
 
-# Same cap as the local-agent path (see app.py).
+# Cap per-message size at 64 MiB. Plenty of headroom for realistic audio
+# chunks from Deepgram while still defending against a client or upstream
+# blasting unbounded frames at us. (The matching browser-side cap is
+# applied via uvicorn's `--ws-max-size` flag; see Dockerfile.webapp.)
 MAX_WS_MESSAGE_BYTES = 64 * 1024 * 1024
 
 

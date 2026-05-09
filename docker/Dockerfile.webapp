@@ -1,5 +1,6 @@
-# Slim FastAPI image. Does NOT include the speech-to-speech stack —
-# that lives in Dockerfile.voice.linux (or runs bare metal on macOS).
+# Slim FastAPI image for the live-slides-agent webapp. The voice pipeline
+# is handled remotely by Deepgram's Voice Agent API, so this image only
+# needs the FastAPI proxy and its Python dependencies.
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -31,8 +32,9 @@ ENV HOME=/home/appuser
 USER appuser
 
 EXPOSE 8000
-# --ws-max-size bounds frames coming FROM the browser; the upstream cap is
-# enforced inside app.py via websockets.connect(max_size=...). 64 MiB.
+# --ws-max-size bounds frames coming FROM the browser; the matching upstream
+# cap is enforced inside voice_deepgram.py via websockets.connect(max_size=...).
+# 64 MiB on both sides.
 CMD ["uv", "run", "uvicorn", "live_slides_agent.app:app", \
      "--host", "0.0.0.0", "--port", "8000", \
      "--ws-max-size", "67108864"]

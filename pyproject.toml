@@ -15,9 +15,6 @@ dependencies = [
     "websockets>=12",
 ]
 
-[project.optional-dependencies]
-voice = ["speech-to-speech>=0.2.6"]
-
 [project.scripts]
 live-slides-agent = "live_slides_agent:main"
 

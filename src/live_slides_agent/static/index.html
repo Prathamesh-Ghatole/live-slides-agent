@@ -243,8 +243,7 @@
     <div
       id="offline-banner"
       class="hidden fixed top-16 left-0 w-full z-40 bg-error-container text-on-error-container border-b border-error px-margin-desktop py-2 text-label-caps font-label-caps tracking-widest uppercase">
-      ⚠ Voice server offline — slides only. Start the speech-to-speech server to
-      enable the neural link.
+      ⚠ Voice server offline — slides only.
     </div>
 
     <!-- ============ Main Stage ============ -->
@@ -375,20 +374,6 @@
           </span>
           <span id="agent-status" class="font-body-md text-primary">Voice Agent:
             Standby</span>
-        </div>
-        <div
-          class="flex items-center bg-surface-container p-1 border border-outline-variant ml-4"
-          id="agent-picker">
-          <button
-            data-agent="deepgram"
-            class="agent-pill px-3 py-1 text-[10px] font-label-caps uppercase tracking-widest bg-primary text-on-primary shadow-sm">
-            Agent A · Deepgram
-          </button>
-          <button
-            data-agent="local"
-            class="agent-pill px-3 py-1 text-[10px] font-label-caps uppercase tracking-widest text-on-surface-variant hover:text-on-surface">
-            Agent B · Local
-          </button>
         </div>
       </div>
 
@@ -639,29 +624,6 @@
       renderPips();
 
       // ----------------------------------------------------------------
-      // Agent picker
-      // ----------------------------------------------------------------
-      let selectedAgent = "deepgram";
-      document.querySelectorAll(".agent-pill").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          selectedAgent = btn.dataset.agent;
-          document.querySelectorAll(".agent-pill").forEach((b) => {
-            const active = b === btn;
-            b.classList.toggle("bg-primary", active);
-            b.classList.toggle("text-on-primary", active);
-            b.classList.toggle("shadow-sm", active);
-            b.classList.toggle("text-on-surface-variant", !active);
-            b.classList.toggle("hover:text-on-surface", !active);
-          });
-          // If already connected, reconnect with new agent
-          if (ws && ws.readyState === WebSocket.OPEN) {
-            stopNeuralLink();
-            startNeuralLink();
-          }
-        });
-      });
-
-      // ----------------------------------------------------------------
       // Status readouts
       // ----------------------------------------------------------------
       const agentStatus = document.getElementById("agent-status");
@@ -796,7 +758,7 @@
         }
 
         const proto = location.protocol === "https:" ? "wss:" : "ws:";
-        const url = `${proto}//${location.host}/ws/voice?agent=${encodeURIComponent(selectedAgent)}`;
+        const url = `${proto}//${location.host}/ws/voice`;
         ws = new WebSocket(url);
         ws.binaryType = "arraybuffer";
 
@@ -892,10 +854,9 @@
       }
 
       // ---------------- Inbound audio playback ----------------
-      // We assume inbound frames are 16-bit PCM mono at 24 kHz (Qwen3-TTS default)
-      // or 16 kHz (Deepgram default). We can't know for sure without a wire-format
-      // spec, so we treat them as 24 kHz — the common case — and resample to the
-      // playback context's native rate.
+      // Deepgram's Voice Agent emits 16-bit PCM mono at the rate we request in
+      // the Settings frame (see agent/deepgram_config.py → OUTPUT_SAMPLE_RATE,
+      // currently 24 kHz). Keep this constant in sync with that value.
       const INBOUND_SAMPLE_RATE = 24000;
 
       function ensurePlaybackCtx() {
