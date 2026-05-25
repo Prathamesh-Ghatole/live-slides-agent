@@ -19,7 +19,7 @@ flowchart LR
     end
 
     subgraph FastAPI
-        WS[/ws/voice]
+        WS["/ws/voice"]
     end
 
     A[Deepgram Voice Agent API]
